@@ -16,7 +16,6 @@ public class TransferHistory extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true)
     private Long transferAmount;
 
     @Enumerated(EnumType.STRING)

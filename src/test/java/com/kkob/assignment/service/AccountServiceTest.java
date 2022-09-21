@@ -1,51 +1,42 @@
-package com.kkob.assignment.controller;
+package com.kkob.assignment.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kkob.assignment.domain.Account;
 import com.kkob.assignment.domain.Address;
 import com.kkob.assignment.domain.User;
 import com.kkob.assignment.dto.request.KakaoBankTransferMoneyRequest;
 import com.kkob.assignment.enums.AccountStatus;
 import com.kkob.assignment.enums.Gender;
+import com.kkob.assignment.facade.RedissonLockAccountFacade;
 import com.kkob.assignment.repository.AccountRepository;
 import com.kkob.assignment.repository.UserRepository;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-@AutoConfigureMockMvc
 @SpringBootTest
-class AccountControllerTest {
+class AccountServiceTest {
     @Autowired
-    private MockMvc mockMvc;
-
+    private AccountRepository accountRepository;
     @Autowired
-    private ObjectMapper objectMapper;
-
+    private AccountService accountService;
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
-    private AccountRepository accountRepository;
+    private RedissonLockAccountFacade lockAccountFacade;
 
     private User sender;
     private User receiver;
     private Account senderAcc;
     private Account receiverAcc;
-
 
     @BeforeEach
     void init() {
@@ -86,27 +77,42 @@ class AccountControllerTest {
                 .user(receiver)
                 .build();
         accountRepository.saveAndFlush(receiverAcc);
+
+
     }
 
-    // given : 계좌에 10,000원이 있고, 이체 금액이 2,000원이며, 이체 진행 할 떄 계좌 비밀번호를 입력하고
-    // when : 입력한 계좌 비밀번호가 참일 때
-    // then : 계좌에는 8,000원이 남게된다.
     @Test
-    @DisplayName("이체 정상 테스트")
-    void 계좌_비밀번호가_정상일때_이체_테스트() throws Exception {
-        //given
-        KakaoBankTransferMoneyRequest transferMoneyDTO = new KakaoBankTransferMoneyRequest(receiver, receiverAcc.getAccountNumber(), senderAcc.getAccountNumber(), 2000L, senderAcc.getPassword());
+    @DisplayName("계좌 잔액 테스트")
+    void 계좌_잔액_테스트() {
+        KakaoBankTransferMoneyRequest request = new KakaoBankTransferMoneyRequest(receiver, receiverAcc.getAccountNumber(), senderAcc.getAccountNumber(), 2000L, senderAcc.getPassword());
+        accountService.sendMoney(request, sender.getId());
 
-        mockMvc.perform(post("/kkob/send/1/money")
-                        .content(objectMapper.writeValueAsString(transferMoneyDTO))
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .accept(MediaType.APPLICATION_JSON_VALUE))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.senderName").value("장현준"))
-                .andExpect(jsonPath("$.amount").value(2000L));
-
-        assertThat(accountRepository.findById(senderAcc.getId()).orElseThrow().getBalance()).isEqualTo(8000);
+        Account account = accountRepository.findById(senderAcc.getId()).orElseThrow();
+        Assertions.assertThat(account.getBalance()).isEqualTo(8000L);
     }
 
+    @Test
+    @DisplayName("잔액 동시성 테스트")
+    void 잔액_동시성_테스트() throws InterruptedException {
+        KakaoBankTransferMoneyRequest request = new KakaoBankTransferMoneyRequest(receiver, receiverAcc.getAccountNumber(), senderAcc.getAccountNumber(), 100L, senderAcc.getPassword());
+        int threadCount = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(32);
+        CountDownLatch countDownLatch = new CountDownLatch(threadCount);
+
+        for (int i=0; i < threadCount; i++) {
+            executorService.submit(() -> {
+                try {
+//                    accountService.sendMoney(request, sender.getId());
+                    lockAccountFacade.sendMoneyFacade(1L, request, sender.getId());
+                } finally {
+                    countDownLatch.countDown();
+                }
+
+            });
+        }
+        countDownLatch.await();
+
+        Account account = accountRepository.findById(senderAcc.getId()).orElseThrow();
+        Assertions.assertThat(account.getBalance()).isEqualTo(0L);
+    }
 }
