@@ -18,6 +18,7 @@ public class Account extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
     private String accountNumber;
 
     private String bankName;

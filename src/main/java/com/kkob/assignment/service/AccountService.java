@@ -29,7 +29,6 @@ public class AccountService {
         Account senderAccount = accountRepository.findByAccountNumberAndUser(request.getSenderAccNumber(), sender).orElseThrow();
         Account receiverAccount = accountRepository.findByAccountNumberAndUser(request.getReceiverAccNumber(), request.getReceiver()).orElseThrow();
 
-        //계좌 상태 체크
         senderAccount.checkStatus();
 
         if (BooleanUtils.isFalse(senderAccount.checkPassword(request.getPassword()))) {
