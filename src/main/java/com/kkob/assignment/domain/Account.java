@@ -1,17 +1,17 @@
 package com.kkob.assignment.domain;
 
 import com.kkob.assignment.enums.AccountStatus;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.Hibernate;
 
 import javax.persistence.*;
 import java.security.InvalidParameterException;
+import java.util.Objects;
 
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 @Entity
 public class Account extends BaseEntity{
     @Id
@@ -76,5 +76,18 @@ public class Account extends BaseEntity{
         if (this.status == AccountStatus.UNAVAILABLE) {
             throw new InvalidParameterException("계좌가 정지된 상태입니다.");
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
+        Account account = (Account) o;
+        return id != null && Objects.equals(id, account.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }

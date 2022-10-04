@@ -9,7 +9,6 @@ import com.kkob.assignment.enums.AccountStatus;
 import com.kkob.assignment.enums.Gender;
 import com.kkob.assignment.repository.AccountRepository;
 import com.kkob.assignment.repository.UserRepository;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,8 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -97,13 +95,13 @@ class AccountControllerTest {
         //given
         KakaoBankTransferMoneyRequest transferMoneyDTO = new KakaoBankTransferMoneyRequest(receiver, receiverAcc.getAccountNumber(), senderAcc.getAccountNumber(), 2000L, senderAcc.getPassword());
 
-        mockMvc.perform(post("/kkob/send/1/money")
+        mockMvc.perform(post("/kkob/send/{senderId}/money", sender.getId())
                         .content(objectMapper.writeValueAsString(transferMoneyDTO))
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.senderName").value("장현준"))
+                .andExpect(jsonPath("$.receiverName").value("라이언"))
                 .andExpect(jsonPath("$.amount").value(2000L));
 
         assertThat(accountRepository.findById(senderAcc.getId()).orElseThrow().getBalance()).isEqualTo(8000);

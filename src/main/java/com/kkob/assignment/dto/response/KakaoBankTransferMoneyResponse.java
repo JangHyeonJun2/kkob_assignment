@@ -6,8 +6,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @AllArgsConstructor
-@NoArgsConstructor
 public class KakaoBankTransferMoneyResponse {
-    private String senderName;
+    private String receiverName;
     private Long amount;
 }
