@@ -13,6 +13,7 @@
 - IDE: Intelij
 - BuildTool : gradle
 - Database : Docker / MySQL
+- Redis : Docker
 
 ### 왜 이체하는 메서드를 동기로 하였나?
 
