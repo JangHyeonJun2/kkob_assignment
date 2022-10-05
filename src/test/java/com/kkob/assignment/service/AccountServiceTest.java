@@ -76,7 +76,7 @@ class AccountServiceTest {
         for (int i=0; i < threadCount; i++) {
             executorService.submit(() -> {
                 try {
-                    lockAccountFacade.sendMoneyFacade(1L, request, sender.getId());
+                    lockAccountFacade.sendMoneyFacade(request, sender.getId());
                 } finally {
                     countDownLatch.countDown();
                 }

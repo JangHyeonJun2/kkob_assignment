@@ -17,11 +17,12 @@ import java.util.concurrent.TimeUnit;
 public class RedissonLockAccountFacade {
     private final long WAIT_TIME = 5L;
     private final long LEASE_TIME = 1L;
+    private final Long INIT_KEY_VALUE = 1L;
     private final RedissonClient redissonClient;
     private final  AccountService accountService;
 
-    public KakaoBankTransferMoneyResponse sendMoneyFacade(Long key, KakaoBankTransferMoneyRequest request, Long senderId) {
-        RLock lock = redissonClient.getLock(key.toString());
+    public KakaoBankTransferMoneyResponse sendMoneyFacade(KakaoBankTransferMoneyRequest request, Long senderId) {
+        RLock lock = redissonClient.getLock(INIT_KEY_VALUE.toString());
 
         try {
             boolean available = lock.tryLock(WAIT_TIME, LEASE_TIME, TimeUnit.SECONDS);

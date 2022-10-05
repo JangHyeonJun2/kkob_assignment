@@ -17,11 +17,10 @@ import javax.validation.Valid;
 @RequestMapping(value = "/kkob", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AccountController {
     private final RedissonLockAccountFacade redissonLockAccountFacade;
-    private final Long INIT_KEY_VALUE = 1L;
 
     @PostMapping(value = "/send/{senderId}/money")
     public KakaoBankTransferMoneyResponse sendMoney(@RequestBody @Valid KakaoBankTransferMoneyRequest request,
                                                     @PathVariable Long senderId) {
-            return redissonLockAccountFacade.sendMoneyFacade(INIT_KEY_VALUE, request, senderId);
+            return redissonLockAccountFacade.sendMoneyFacade(request, senderId);
     }
 }
